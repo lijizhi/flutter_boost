@@ -19,9 +19,9 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.5
-  image_picker: ^0.8.5+3
-  video_player: ^2.4.6
-  webview_flutter: ^3.0.4
+  image_picker: ^1.0.7  # 升级到支持 v2 embedding 的版本 - lijizhi
+  video_player: ^2.9.2  # 升级到支持 v2 embedding 的版本 - lijizhi
+  webview_flutter: ^4.9.0  # 升级到支持 v2 embedding 的版本 - lijizhi
   dual_screen: ^1.0.3
 
 dev_dependencies:

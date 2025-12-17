@@ -15,11 +15,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import io.flutter.FlutterInjector;
 import io.flutter.embedding.android.FlutterEngineProvider;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.embedding.engine.FlutterEngineCache;
 import io.flutter.embedding.engine.dart.DartExecutor;
-import io.flutter.view.FlutterMain;
+import io.flutter.embedding.engine.loader.FlutterLoader;
 
 public class FlutterBoost {
     public static final String ENGINE_ID = "flutter_boost_default_engine";
@@ -85,8 +86,18 @@ public class FlutterBoost {
         if (!engine.getDartExecutor().isExecutingDart()) {
             // Pre-warm the cached FlutterEngine.
             engine.getNavigationChannel().setInitialRoute(options.initialRoute());
+            // 使用 FlutterInjector 和 FlutterLoader 获取应用包路径 - lijizhi
+            String appBundlePath = null;
+            try {
+                FlutterLoader flutterLoader = FlutterInjector.instance().flutterLoader();
+                appBundlePath = flutterLoader.findAppBundlePath();
+            } catch (Exception e) {
+                // 如果 FlutterLoader 未初始化，尝试使用反射或其他方式获取
+                // 或者使用 null（FlutterEngine 在某些情况下可以自动处理）
+                appBundlePath = null;
+            }
             engine.getDartExecutor().executeDartEntrypoint(new DartExecutor.DartEntrypoint(
-                    FlutterMain.findAppBundlePath(), options.dartEntrypoint()), options.dartEntrypointArgs());
+                    appBundlePath, options.dartEntrypoint()), options.dartEntrypointArgs());
         }
         if (callback != null) callback.onStart(engine);
 

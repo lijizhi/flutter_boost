@@ -16,8 +16,7 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
   @override
   void initState() {
     super.initState();
-    // Enable hybrid composition.
-    if (Platform.isAndroid) WebView.platform = SurfaceAndroidWebView();
+    // webview_flutter 4.x 不再需要设置 platform，默认使用 hybrid composition - lijizhi
   }
 
   Route<dynamic> normal(Widget widget, RouteSettings settings) =>
@@ -72,16 +71,28 @@ class _BottomNavigationPageState extends State<BottomNavigationPage> {
   }
 }
 
-class Test1 extends StatelessWidget {
+class Test1 extends StatefulWidget {
   const Test1({Key? key}) : super(key: key);
 
   @override
+  State<Test1> createState() => _Test1State();
+}
+
+class _Test1State extends State<Test1> {
+  late final WebViewController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    // webview_flutter 4.x 必须使用 WebViewController - lijizhi
+    controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..loadRequest(Uri.parse('https://flutter.dev'));
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const WebView(
-      initialUrl: 'https://flutter.dev',
-      javascriptMode: JavascriptMode.unrestricted,
-      //   backgroundColor: Color(0x00000000),
-    );
+    return WebViewWidget(controller: controller);
   }
 }
 

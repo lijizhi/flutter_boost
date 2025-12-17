@@ -31,6 +31,8 @@ public class MyApplication extends FlutterApplication {
             engine.getPlatformViewsController().getRegistry().registerViewFactory("<simple-text-view>", new TextViewFactory());
             engine.getPlatformViewsController().getRegistry().registerViewFactory("<runball-surface>", new RunBallViewFactory());
             engine.getPlatformViewsController().getRegistry().registerViewFactory("<color-rectangle>", new GlSurfaceFactory());
+            // Register TextPlatformView for plugins.test/view - lijizhi
+            engine.getPlatformViewsController().getRegistry().registerViewFactory("plugins.test/view", new TextPlatformViewFactory(io.flutter.plugin.common.StandardMessageCodec.INSTANCE));
             engine.getPlugins();
         }, options);
     }

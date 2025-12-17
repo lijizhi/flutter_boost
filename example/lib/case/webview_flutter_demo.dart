@@ -14,12 +14,15 @@ class WebViewExampleState extends State<WebViewExample> {
   bool usingHybridComposition = true;
   final url = 'https://flutter.dev';
   final String viewType = '<simple-text-view>';
+  late final WebViewController webViewController;
 
   @override
   void initState() {
     super.initState();
-    // Enable virtual display.
-    // if (Platform.isAndroid) WebView.platform = AndroidWebView();
+    // webview_flutter 4.x 必须使用 WebViewController - lijizhi
+    webViewController = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..loadRequest(Uri.parse(url));
   }
 
   @override
@@ -103,9 +106,7 @@ class WebViewExampleState extends State<WebViewExample> {
                             width: 400,
                             height: 300,
                             margin: const EdgeInsets.all(10.0),
-                            child: WebView(
-                              initialUrl: url,
-                            ),
+                            child: WebViewWidget(controller: webViewController),
                           ),
                         Opacity(
                           opacity: visible ? 1.0 : 0.5,

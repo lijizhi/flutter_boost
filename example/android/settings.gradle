@@ -1,15 +1,76 @@
-include ':app'
+pluginManagement {
+    def flutterSdkPath = {
+        def properties = new Properties()
+        file("local.properties").withInputStream { properties.load(it) }
+        def flutterSdkPath = properties.getProperty("flutter.sdk")
+        assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
+        return flutterSdkPath
+    }()
+
+    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+plugins {
+    id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+    id "com.android.application" version "8.9.1" apply false
+}
+
+include ":app"
 
 def flutterProjectRoot = rootProject.projectDir.parentFile.toPath()
 
-def plugins = new Properties()
+def flutterPlugins = new Properties()
 def pluginsFile = new File(flutterProjectRoot.toFile(), '.flutter-plugins')
 if (pluginsFile.exists()) {
-    pluginsFile.withReader('UTF-8') { reader -> plugins.load(reader) }
+    pluginsFile.withReader('UTF-8') { reader -> flutterPlugins.load(reader) }
 }
 
-plugins.each { name, path ->
+flutterPlugins.each { name, path ->
     def pluginDirectory = flutterProjectRoot.resolve(path).resolve('android').toFile()
     include ":$name"
     project(":$name").projectDir = pluginDirectory
+    
+    // 为所有插件自动配置 namespace（如果缺少）- lijizhi
+    project(":$name").afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            // 检查是否已经设置了 namespace
+            def hasNamespace = false
+            try {
+                if (project.android.hasProperty('namespace') && project.android.namespace != null) {
+                    hasNamespace = true
+                }
+            } catch (Exception e) {
+                // namespace 属性不存在或无法访问
+            }
+            
+            if (!hasNamespace) {
+                // 尝试从 AndroidManifest.xml 读取 package 属性
+                def manifestFile = project.file('src/main/AndroidManifest.xml')
+                def namespace = null
+                
+                if (manifestFile.exists()) {
+                    def manifestContent = manifestFile.text
+                    // 匹配 package="..." 或 package='...'
+                    def packageMatch = manifestContent =~ /package=["']([^"']+)["']/
+                    if (packageMatch) {
+                        namespace = packageMatch[0][1]
+                    }
+                }
+                
+                // 如果仍然没有找到，使用默认命名空间格式
+                if (namespace == null) {
+                    namespace = "io.flutter.plugins.${name.replace('-', '_')}"
+                }
+                
+                // 设置 namespace
+                project.android.namespace = namespace
+            }
+        }
+    }
 }

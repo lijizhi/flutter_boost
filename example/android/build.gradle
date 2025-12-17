@@ -1,18 +1,7 @@
-buildscript {
-    repositories {
-        google()
-        jcenter()
-    }
-
-    dependencies {
-        classpath 'com.android.tools.build:gradle:7.4.0'
-    }
-}
-
 allprojects {
     repositories {
         google()
-        jcenter()
+        mavenCentral()
     }
 }
 
@@ -22,8 +11,85 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(':app')
+    
+    // 为所有子项目自动配置 namespace（如果缺少）- lijizhi
+    beforeEvaluate { project ->
+        // 检查是否是 Flutter 插件项目（通过检查是否有 android 目录）
+        def androidDir = project.file('src/main/AndroidManifest.xml')
+        if (androidDir.exists()) {
+            // 延迟到 android 块配置时设置 namespace
+            project.afterEvaluate { proj ->
+                if (proj.hasProperty('android') && proj.plugins.hasPlugin('com.android.library')) {
+                    try {
+                        // 检查是否已经设置了 namespace
+                        def hasNamespace = false
+                        try {
+                            if (proj.android.hasProperty('namespace') && proj.android.namespace != null) {
+                                hasNamespace = true
+                            }
+                        } catch (Exception e) {
+                            // namespace 属性不存在
+                        }
+                        
+                        if (!hasNamespace) {
+                            // 尝试从 AndroidManifest.xml 读取 package 属性
+                            def manifestFile = proj.file('src/main/AndroidManifest.xml')
+                            def namespace = null
+                            
+                            if (manifestFile.exists()) {
+                                def manifestContent = manifestFile.text
+                                // 匹配 package="..." 或 package='...'
+                                def packageMatch = manifestContent =~ /package=["']([^"']+)["']/
+                                if (packageMatch) {
+                                    namespace = packageMatch[0][1]
+                                }
+                            }
+                            
+                            // 如果仍然没有找到，使用默认命名空间格式
+                            if (namespace == null) {
+                                namespace = "io.flutter.plugins.${proj.name.replace('-', '_')}"
+                            }
+                            
+                            // 设置 namespace
+                            proj.android.namespace = namespace
+                        }
+                    } catch (Exception e) {
+                        // 忽略配置错误
+                    }
+                }
+            }
+        }
+    }
+    
+    // 为所有子项目配置 Kotlin 和 Java JVM target - lijizhi
+    beforeEvaluate { project ->
+        // 在项目评估前注册回调，避免在已评估的项目上调用 afterEvaluate
+        project.afterEvaluate { proj ->
+            if (proj.hasProperty('android')) {
+                try {
+                    // 配置 Java 编译选项
+                    proj.android.compileOptions {
+                        sourceCompatibility JavaVersion.VERSION_17
+                        targetCompatibility JavaVersion.VERSION_17
+                    }
+                    
+                    // 配置 Kotlin 编译选项（如果项目使用了 Kotlin）
+                    if (proj.plugins.hasPlugin('org.jetbrains.kotlin.android') || 
+                        proj.plugins.hasPlugin('kotlin-android')) {
+                        proj.android {
+                            kotlinOptions {
+                                jvmTarget = "17"
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    // 忽略配置错误
+                }
+            }
+        }
+    }
 }
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
+tasks.register("clean", Delete) {
+    delete rootProject.layout.buildDirectory
 }

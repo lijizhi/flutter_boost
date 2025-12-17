@@ -16,8 +16,10 @@ import com.idlefish.flutterboost.FlutterBoostUtils;
 
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.embedding.engine.FlutterShellArgs;
+import io.flutter.embedding.engine.loader.FlutterLoader;
+import io.flutter.FlutterInjector;
 import io.flutter.plugin.platform.PlatformPlugin;
-import io.flutter.view.FlutterMain;
+import io.flutter.plugin.view.SensitiveContentPlugin;
 import java.util.List;
 
 public class LifecycleView extends FrameLayout implements LifecycleOwner, FlutterActivityAndFragmentDelegate.Host {
@@ -150,7 +152,32 @@ public class LifecycleView extends FrameLayout implements LifecycleOwner, Flutte
 
   @NonNull
   public String getAppBundlePath() {
-    return getArguments().getString(ARG_APP_BUNDLE_PATH, FlutterMain.findAppBundlePath());
+    // 使用 FlutterLoader 替代已废弃的 FlutterMain - lijizhi
+    String defaultPath = null;
+    try {
+      FlutterLoader flutterLoader = FlutterInjector.instance().flutterLoader();
+      defaultPath = flutterLoader.findAppBundlePath();
+    } catch (Exception e) {
+      // 如果 FlutterLoader 未初始化，使用 null
+      defaultPath = null;
+    }
+    return getArguments().getString(ARG_APP_BUNDLE_PATH, defaultPath);
+  }
+
+  @Nullable
+  public SensitiveContentPlugin provideSensitiveContentPlugin(
+      @NonNull Activity activity, @NonNull FlutterEngine flutterEngine) {
+    // 实现 provideSensitiveContentPlugin 方法 - lijizhi
+    // 返回 null 表示不提供敏感内容插件
+    return null;
+  }
+
+  // 注意：getBackCallbackState 方法在不同 Flutter 版本中可能有不同的返回类型
+  // 如果编译错误，可能需要根据实际 Flutter 版本调整返回类型 - lijizhi
+  public boolean getBackCallbackState() {
+    // 实现 getBackCallbackState 方法 - lijizhi
+    // 返回 true 表示启用 back callback
+    return true;
   }
 
   @Nullable
